@@ -1,6 +1,5 @@
 % --------------------------------------------------------------
-% This is all preamble stuff that you don't have to worry about.
-% Head down to where it says "Start here"
+% PREAMBLE
 % --------------------------------------------------------------
 
 \documentclass[12pt]{article}
@@ -17,9 +16,6 @@
 \DeclarePairedDelimiter\abs{\lvert}{\rvert}%
 \DeclarePairedDelimiter\norm{\lVert}{\rVert}%
 
-% Swap the definition of \abs* and \norm*, so that \abs
-% and \norm resizes the size of the brackets, and the
-% starred version does not.
 \makeatletter
 \let\oldabs\abs
 \def\abs{\@ifstar{\oldabs}{\oldabs*}}
@@ -53,7 +49,7 @@
 \begin{document}
 
 % --------------------------------------------------------------
-%                         Start here
+% DOCUMENT
 % --------------------------------------------------------------
 
 \title{Supplemental Note: Dynamical model of Cas13d gRNA excision for negative-autoregulatory optimization}
