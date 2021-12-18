@@ -1,30 +1,14 @@
-# detect environment
-import os
-hostname = os.popen('hostname').read()
-if 'ufhpc' in hostname:
-    # hipergator
-    import matplotlib
-    matplotlib.use('Agg')
-    env = 'ufhpc'
-else:
-    env = 'local'
-
-# imports
 from cellpose import models
-from copy import deepcopy
 from matplotlib import pyplot as plt
-from matplotlib import colors
-from skimage import feature, filters, morphology
+from skimage import morphology
 from xml.etree import ElementTree
 import argparse
 import contextlib
 import csv
-import hashlib
 import io
 import mxnet as mx
 import numpy as np
-# import os
-import scipy.stats as ss
+import os
 import sys
 
 # custom libraries
@@ -78,7 +62,9 @@ print('Done.')
 
 #--  FILE OPERATIONS  ---------------------------------------------------------#
 
+# determine image filetype and open
 print('Loading image...', end='')
+
 if img_path.lower().endswith('.czi'):
     img_type = 'czi'
     img_name = os.path.splitext(os.path.basename(img_path))[0]
@@ -126,7 +112,7 @@ else:
 
 print('Done.')
 
-# get pixel dimensions
+# get pixel dimensions from CZI metadata
 dim_iter = mtree.find('Metadata').find('Scaling').find('Items').findall('Distance')
 dims = {}
 for dimension in dim_iter:
@@ -134,7 +120,7 @@ for dimension in dim_iter:
     dims.update({dim_id:float(dimension.find('Value').text)*1.E6}) # [um]
 pixel_area = dims['X'] * dims['Y']  # [um^2]
 
-# get channel filters
+# get channel filters from CZI metadata
 track_tree = mtree.find('Metadata').find('Experiment').find('ExperimentBlocks').find('AcquisitionBlock').find('MultiTrackSetup').findall('TrackSetup')
 tracks = []
 for track in track_tree:
@@ -165,25 +151,25 @@ try:
 except ValueError:
     # use last channel
     img_fish = img[-1,:,:,:]
-    print('GFP: ' + str(tracks[-1]))
+    print('FISH: ' + str(tracks[-1]))
     
 
 #--  PROCESSING  --------------------------------------------------------------#
 
-# max projection
+# max projection along z-dimension (collapse to 2D)
 img_dapi_zmax = np.amax(img_dapi, axis=0)
 img_gfp_zmax = np.amax(img_gfp, axis=0)
 img_fish_zmax = np.amax(img_fish, axis=0)
 
-# output image in plot
+# draw channels and save as PDF
 fig, ax = plt.subplots(1, 3, figsize=(10,4))
 ax[0].imshow(img_dapi_zmax, cmap=su.cmap_KtoB)
 ax[1].imshow(img_gfp_zmax, cmap=su.cmap_KtoG)
 ax[2].imshow(img_fish_zmax, cmap=su.cmap_KtoR)
-plt.savefig(os.path.join(outdir, img_name + '_channels.png'), dpi=300)
+plt.savefig(os.path.join(outdir, img_name + '_channels.pdf'), dpi=300)
 plt.close()
 
-# segment nuclei
+# segment nuclei using Cellpose
 print('\nSegmenting nuclei...', end='')
 with silence_stdout():
     masks_nuc, _, _, _ = model_nuc.eval([img_dapi_zmax], rescale=None, channels=[[0, 0]], diameter=80.)
@@ -207,13 +193,13 @@ for l in nuclei_labels:
 
 negative_mask = (labeled_mask_nuc > 0).astype(int) - positive_mask
 
-# output segmentation
+# output segmentation as PDF
 fig, ax = plt.subplots(1, 3, figsize=(10,4))
 ax[0].imshow(img_dapi_zmax, cmap=su.cmap_KtoB)
 ax[1].imshow(img_fish_zmax, cmap=su.cmap_KtoR)
 ax[2].imshow(negative_mask, cmap='binary_r')
 ax[2].imshow(positive_mask, cmap=su.cmap_NtoR)
-plt.savefig(os.path.join(outdir, img_name + '_mask.png'), dpi=300)
+plt.savefig(os.path.join(outdir, img_name + '_mask.pdf'), dpi=300)
 plt.close()
 
 # output intensities

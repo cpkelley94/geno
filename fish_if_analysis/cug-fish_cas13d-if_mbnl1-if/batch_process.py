@@ -20,10 +20,10 @@ for i, p_img in enumerate(image_paths):
     img_name = os.path.splitext(os.path.basename(p_img))[0]
 
     cmd = 'module load python/3.6.5\n'
-    cmd += 'python analyze_foci_fish.py "' + p_img + '" out'
+    cmd += 'python analyze_cug_cas13d_mbnl1.py "' + p_img + '" out'
 
     sh_path = img_name + '.sh'
-    sh_paths.append(['img' + str(i).zfill(3), sh_path])
+    sh_paths.append(['img_' + str(i).zfill(3), sh_path])
 
     with open(sh_path, 'w') as sh_file:
         sh_file.write(cmd)

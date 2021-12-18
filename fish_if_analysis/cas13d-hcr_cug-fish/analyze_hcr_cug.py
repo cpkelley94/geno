@@ -1,24 +1,10 @@
-import matplotlib
-matplotlib.use('Agg')
-
-from copy import deepcopy
-# from itertools import count
 from matplotlib import pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.tri import Triangulation
-from mpl_toolkits import mplot3d
-from numpy.linalg import norm
-from scipy.interpolate import interpn
-from scipy.ndimage.morphology import distance_transform_edt
-from skimage import feature, exposure, filters, morphology, measure
+from skimage import feature, filters, morphology
 from xml.etree import ElementTree
 import argparse
 import csv
-import matplotlib.cm as cm
 import numpy as np
 import os
-import scipy.ndimage as ndi
-import trimesh
 
 # custom libraries
 import scope_utils3 as su
@@ -27,6 +13,11 @@ import scope_utils3 as su
 #--  FUNCTION DECLARATIONS  ---------------------------------------------------#
 
 def open_image_2d(img_path, meta_path=None):
+    '''Open 2D CZI image as a numpy array (dimensions: channel, x, y). Return 
+    the numpy array, the name of the image, and an ElementTree object containing 
+    the microscopy metadata.
+    '''
+
     # determine image filetype and open
     if img_path.lower().endswith('.czi'):
         img_name = os.path.splitext(os.path.basename(img_path))[0]
@@ -49,6 +40,12 @@ def open_image_2d(img_path, meta_path=None):
     return img, img_name, metatree
 
 def threshold_nuclei_2d(img_dapi, t_dapi=None, labeled=True, multiplier=0.75, verbose=False):
+    '''Segment nuclei from DAPI channel. Return a binary mask.
+    
+    If labeled == True, output a mask where each nucleus is labeled with an 
+    integer value.
+    '''
+    
     if verbose:
         print('\nSegmenting nuclei...')
 
@@ -82,6 +79,11 @@ def threshold_nuclei_2d(img_dapi, t_dapi=None, labeled=True, multiplier=0.75, ve
         return np.where(nuclei_labeled > 0, 1, 0)
 
 def find_spots_2d(img_fish, sigma=1., t_spot=5, mask=None):
+    '''Detect FISH spots using Laplacian of Gaussian method. Return a 2D array 
+    containing the positions of the spots in image coordinates. If a binary mask is 
+    provided, only return positions of spots that fall within the mask.
+    '''
+
     spots = feature.blob_log(img_fish, sigma, sigma, num_sigma=1, threshold=t_spot)
     
     if mask is not None:
@@ -129,26 +131,23 @@ t_spots = [t_spot_hcr, t_spot_cug]
 
 # determine image filetype and open
 print('Analyzing `' + p_img + '`...\n')
-
 img, img_name, mtree = open_image_2d(p_img)
-
-
 img_hcr, img_cug, img_cellmask, img_dapi = img
-vmaxs = [15, 5, 10, 5] 
 
+# draw all channels and save as PDF
 if should_plot:
-    su.draw_images([img_hcr, img_cug, img_cellmask, img_dapi], titles=['Cas13d HCR FISH', 'CUG FISH', 'CellMask', 'DAPI'], vmax=vmaxs, out_name=os.path.join(outdir, 'images', img_name+'_channels.pdf'))
+    su.draw_images([img_hcr, img_cug, img_cellmask, img_dapi], titles=['Cas13d HCR FISH', 'CUG FISH', 'CellMask', 'DAPI'], vmax=[15, 5, 10, 5], out_name=os.path.join(outdir, 'images', img_name+'_channels.pdf'))
 
-# get pixel dimensions
+# get pixel dimensions from CZI metadata
 dim_iter = mtree.find('Metadata').find('Scaling').find('Items').findall('Distance')
 dims = {}
 for dimension in dim_iter:
     dim_id = dimension.get('Id')
     dims.update({dim_id:float(dimension.find('Value').text)*1.E6}) # [um]
-pixel_area = dims['X'] * dims['Y']  # [um^3]
+pixel_area = dims['X'] * dims['Y']  # [um^2]
 dims_xy = np.array([dims['X'], dims['Y']])
 
-# get channel wavelengths
+# get channel wavelengths from CZI metadata
 track_tree = mtree.find('Metadata').find('Experiment').find('ExperimentBlocks').find('AcquisitionBlock').find('MultiTrackSetup').findall('TrackSetup')
 tracks = []
 for track in track_tree:
@@ -161,19 +160,23 @@ print('Tracks: ' + ', '.join(map(str, tracks)))
 
 #--  SEGMENTATION  ------------------------------------------------------------#
 
+# identify nuclei and create binary mask
 nuclei_labeled = threshold_nuclei_2d(img_dapi, t_dapi=t_dapi, verbose=True)
 nuclei_binary = np.where(nuclei_labeled > 0, 1, 0)
 nuclei_border = morphology.binary_dilation(nuclei_binary, selem=morphology.disk(2)) - nuclei_binary
 
+# draw segmentation and save as PDF
 if should_plot:
     su.draw_images([nuclei_binary, img_dapi], vmax=[1, 5], titles=['nuclei', 'DAPI'], cmaps=['binary_r', su.cmap_KtoB], out_name=os.path.join(outdir, 'images', img_name+'_regions.pdf'))
 
 
 #--  FISH SPOT DETECTION  -----------------------------------------------------#
 
+# detect HCR FISH spots using Laplacian of Gaussian
 hcr_spots_masked = find_spots_2d(img_hcr, t_spot=t_spot_hcr, sigma=2.)
 print(str(hcr_spots_masked.shape[0]) + ' HCR FISH spots detected.')
 
+# draw HCR spot detection and save as PDF
 if should_plot:
     fig, ax = plt.subplots()
     im_xy = ax.imshow(img_hcr, vmax=15, cmap='binary_r')
@@ -182,9 +185,11 @@ if should_plot:
     plt.savefig(os.path.join(outdir, 'images', img_name + '_hcr_detection.pdf'), dpi=600)
     plt.close()
 
+# detect CUG FISH spots using Laplacian of Gaussian
 cug_spots_masked = find_spots_2d(img_cug, t_spot=t_spot_cug, sigma=2.)
 print(str(cug_spots_masked.shape[0]) + ' CUG FISH spots detected.')
 
+# draw CUG spot detection and save as PDF
 if should_plot:
     fig, ax = plt.subplots()
     im_xy = ax.imshow(img_cug, vmax=5, cmap='binary_r')
@@ -196,12 +201,14 @@ if should_plot:
 
 #--  PER-NUCLEUS FISH CALCULATIONS  -------------------------------------------#
 
+# initialize output tables
 hcr_spot_table = [['#nucleus', 'x', 'y', 'intensity']]
 hcr_nuc_table = [['#nucleus', 'mean', 'total']]
 cug_spot_table = [['#nucleus', 'x', 'y', 'intensity']]
 cug_nuc_table = [['#nucleus', 'mean', 'total']]
 
 for l in sorted(np.unique(nuclei_labeled)):  # 0 is outside nuclei, 1+ is within nuclei
+    # create a mask for this nucleus only (or the whole area outside nuclei if l == 0)
     this_nucleus = (nuclei_labeled == l)
 
     # find HCR FISH spots in this nucleus
@@ -233,15 +240,14 @@ for l in sorted(np.unique(nuclei_labeled)):  # 0 is outside nuclei, 1+ is within
     for cug_spot in cug_spots_masked:
         if this_nucleus[tuple(cug_spot[:2].astype(int))]:
             these_cug_spots.append(cug_spot)  # spot is in the nucleus, count it
-    # these_cug_spots = np.stack(these_cug_spots, axis=0)
 
     # calculate spot intensities
     img_cug_blur = filters.gaussian(img_cug, (2,2), preserve_range=True)
     cug_spot_intensities = [img_cug_blur[tuple(spot[:2].astype(int))] for spot in these_cug_spots]
 
     # calculate total CUG FISH intensity
-    bg = 2  # set threshold for background signal intensity
-    img_cug_baseline = img_cug.astype(np.int32) - bg
+    bg = 2  # set threshold for background signal intensity (assumes 8-bit images -- this is an empirical value)
+    img_cug_baseline = img_cug.astype(np.int32) - bg  # subtract baseline (img needs to be signed int)
     img_cug_baseline[img_cug_baseline < 0] = 0
     pix_intens = img_cug_baseline[this_nucleus]
     nuclear_mean_fish = np.mean(pix_intens)
@@ -255,14 +261,6 @@ for l in sorted(np.unique(nuclei_labeled)):  # 0 is outside nuclei, 1+ is within
         for spot, intens in zip(these_cug_spots, cug_spot_intensities):
             cug_spot_table.append([img_name + '-' + str(l)] + list(spot[:2]) + [intens])
         cug_nuc_table.append([img_name + '-' + str(l), nuclear_mean_fish, nuclear_total_fish])
-    
-    # if should_plot:
-    #     fig, ax = plt.subplots()
-    #     im_xy = ax.imshow(img_cug_baseline, vmax=4, cmap='binary_r')
-    #     im_nucborder = ax.imshow(nuclei_border, vmax=1, cmap=su.cmap_NtoB)
-    #     spots_xy = ax.scatter(these_cug_spots[:,1], these_cug_spots[:,0], s=12, c='none', edgecolors='y', linewidths=0.5, alpha=0.5)
-    #     plt.savefig(os.path.join(outdir, 'images', img_name + '_cug_nucleus.pdf'), dpi=600)
-    #     plt.close()
 
 # output tables to file
 with open(os.path.join(outdir, 'hcr_spot_intensity', img_name + '_hcr_intensities.csv'), 'w') as outfile:

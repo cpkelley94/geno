@@ -115,7 +115,7 @@ dims = {}
 for dimension in dim_iter:
     dim_id = dimension.get('Id')
     dims.update({dim_id:float(dimension.find('Value').text)*1.E6}) # [um]
-pixel_area = dims['X'] * dims['Y']  # [um^3]
+pixel_area = dims['X'] * dims['Y']  # [um^2]
 dims_xy = np.array([dims['X'], dims['Y']])
 
 # get channel wavelengths from CZI metadata

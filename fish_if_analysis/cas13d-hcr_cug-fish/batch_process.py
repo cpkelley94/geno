@@ -13,7 +13,7 @@ p_ftable = args['file_table'][0]
 outdir = args['outdir'][0]
 should_run = args['run']
 
-# file list should be in format [img_path, out_dir, gene1, gene2, t_dapi, t_fiber, t_spot1, t_spot2]
+# file list should be in format [img_path, t_dapi, t_spot_hcr, t_spot_cug]
 with open(p_ftable, 'r') as listfile:
     file_list = listfile.readlines()
 
@@ -24,7 +24,7 @@ for i, line in enumerate(file_list):
     img_name = os.path.splitext(os.path.basename(p_img))[0]
 
     cmd = 'module load python/3.6.5\n'
-    cmd += 'python analyze_e063.py "' + p_img + '" ' + outdir
+    cmd += 'python analyze_hcr_cug.py "' + p_img + '" ' + outdir
     if not t_dapi == '.':
         cmd += ' -d ' + t_dapi
     if not t_spot_hcr == '.':
@@ -34,7 +34,7 @@ for i, line in enumerate(file_list):
     cmd += ' --plot\n'
 
     sh_path = outdir + '_' + str(i).zfill(2) + '.sh'
-    sh_paths.append(['e063_' + str(i).zfill(2), sh_path])
+    sh_paths.append(['img_' + str(i).zfill(2), sh_path])
 
     with open(sh_path, 'w') as sh_file:
         sh_file.write(cmd)

@@ -1,30 +1,14 @@
-# detect environment
-import os
-hostname = os.popen('hostname').read()
-if 'ufhpc' in hostname:
-    # hipergator
-    import matplotlib
-    matplotlib.use('Agg')
-    env = 'ufhpc'
-else:
-    env = 'local'
-
-# imports
 from cellpose import models
-from copy import deepcopy
 from matplotlib import pyplot as plt
-from matplotlib import colors
-from skimage import feature, filters, morphology
+from skimage import filters, morphology
 from xml.etree import ElementTree
 import argparse
 import contextlib
 import csv
-import hashlib
 import io
 import mxnet as mx
 import numpy as np
-# import os
-import scipy.stats as ss
+import os
 import sys
 
 # custom libraries
@@ -78,7 +62,9 @@ print('Done.')
 
 #--  FILE OPERATIONS  ---------------------------------------------------------#
 
+# determine image filetype and open
 print('Loading image...', end='')
+
 if img_path.lower().endswith('.czi'):
     img_type = 'czi'
     img_name = os.path.splitext(os.path.basename(img_path))[0]
@@ -93,40 +79,14 @@ if img_path.lower().endswith('.czi'):
             meta = czi_file.metadata()
             mtree = ElementTree.fromstring(meta)
 
-    img = img_czi[0,0,:,0,:,:,:,0]  # c, z, x, y
-
-elif any([img_path.lower().endswith(ext) for ext in ['.ome.tiff', '.ome.tif']]):
-    img_type = 'ome-tiff'
-    img_name = os.path.splitext(os.path.splitext(os.path.basename(img_path))[0])[0]
-
-    # open OME-TIFF format using `bioformats` library (requires Java)
-    import javabridge
-    import bioformats
-
-    with silence_stdout():
-        # read file with Java BioFormats
-        javabridge.start_vm(class_path=bioformats.JARS)
-        s = bioformats.load_image(img_path, z=0)
-        javabridge.kill_vm()
-
-    img_ome = np.array(s)
-    img = img_ome.transpose(2,0,1)  # c, z, x, y
-
-    # look for metadata .XML file with same filename
-    if meta_path is None:
-        meta_path = os.path.splitext(os.path.splitext(img_path)[0])[0] + '.xml'
-    try:
-        mtree = ElementTree.parse(meta_path)
-    except IOError:
-        # metadata file not found
-        raise IOError('CZI metadata XML not found at expected path "' + meta_path + '" (required for OME-TIFF)')
+    img = img_czi[0,0,:,0,0,:,:,0]  # c, z, x, y
 
 else:
-    raise ValueError('Image filetype not recognized. Allowed:  .CZI, .OME.TIFF')
+    raise ValueError('Image filetype not recognized. Allowed:  .CZI')
 
 print('Done.')
 
-# get pixel dimensions
+# get pixel dimensions from CZI metadata
 dim_iter = mtree.find('Metadata').find('Scaling').find('Items').findall('Distance')
 dims = {}
 for dimension in dim_iter:
@@ -134,7 +94,7 @@ for dimension in dim_iter:
     dims.update({dim_id:float(dimension.find('Value').text)*1.E6}) # [um]
 pixel_area = dims['X'] * dims['Y']  # [um^2]
 
-# get channel filters
+# get channel filters from CZI metadata
 track_tree = mtree.find('Metadata').find('Experiment').find('ExperimentBlocks').find('AcquisitionBlock').find('MultiTrackSetup').findall('TrackSetup')
 tracks = []
 for track in track_tree:
@@ -142,11 +102,11 @@ for track in track_tree:
     tracks.append(filtr)
 print('\nTracks: ' + ', '.join(tracks))
 
-# split channels
-img_mbnl = su.normalize_image(img[0,0,:,:])
-img_dcas13 = su.normalize_image(img[1,0,:,:])
-img_fish = su.normalize_image(img[2,0,:,:])
-img_dapi = su.normalize_image(img[3,0,:,:])
+# split channels into 2D arrays
+img_mbnl = su.normalize_image(img[0,:,:])
+img_dcas13 = su.normalize_image(img[1,:,:])
+img_fish = su.normalize_image(img[2,:,:])
+img_dapi = su.normalize_image(img[3,:,:])
 
 # draw channels
 img_list = [img_mbnl, img_dcas13, img_fish, img_dapi]
@@ -180,12 +140,6 @@ bg_intens = np.median(img_fish[labeled_mask_nuc == 0])
 positive_labels = []
 positive_mask = np.zeros_like(labeled_mask_nuc)
 for l in nuclei_labels:
-    # nuc_intens = np.mean(img_fish[labeled_mask_nuc == l])
-    # print(nuc_intens/bg_intens)
-    # if nuc_intens/bg_intens > 10:  # positive
-    #     positive_labels.append(l)
-    #     positive_mask = positive_mask + (labeled_mask_nuc == l).astype(int)
-
     max98_intens = np.percentile(img_fish[labeled_mask_nuc == l], 98)
     print(max98_intens/bg_intens)
     if max98_intens/bg_intens > 25:  # positive
@@ -228,7 +182,6 @@ for l in positive_labels:
 
     output_line = [l, enrich_dcas13, enrich_mbnl1]
     output_list.append(output_line)
-
 
 # output enrichments
 with open(os.path.join(outdir, img_name + '_enrichments.csv'), 'w') as outfile:

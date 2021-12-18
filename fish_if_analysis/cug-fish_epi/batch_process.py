@@ -20,10 +20,10 @@ for i, p_img in enumerate(image_paths):
     img_name = os.path.splitext(os.path.basename(p_img))[0]
 
     cmd = 'module load python/3.6.5\n'
-    cmd += 'python analyze_foci_fish.py "' + p_img + '" analysis'
+    cmd += 'python analyze_cug_epi.py "' + p_img + '" analysis'
 
     sh_path = img_name + '.sh'
-    sh_paths.append(['img' + str(i).zfill(3), sh_path])
+    sh_paths.append(['img_' + str(i).zfill(3), sh_path])
 
     with open(sh_path, 'w') as sh_file:
         sh_file.write(cmd)
@@ -35,5 +35,5 @@ for name, bp in sh_paths:
 if should_run:
     # slurmify the bash scripts and queue them in slurm
     for name, bp in sh_paths:
-        cmd = 'slurmify-run ' + bp + ' -n ' + name + ' -m 8 -t 1 --burst'
+        cmd = 'slurmify ' + bp + ' -n ' + name + ' -m 8 -t 1 --burst --run'
         subprocess.Popen(cmd, shell=True)
