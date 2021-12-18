@@ -50,6 +50,7 @@ def cas13d_dynamics_no_reg(v, t):
     R = Cas13d mRNA
     A = Cas13d apoprotein
     B = Cas13d:gRNA binary complex
+    G = unbound gRNA
     '''
 
     global r_t, k_T, k_proc, k_deg_R, k_deg_A, k_deg_B, r_t_G, k_deg_G  # get rates
@@ -83,7 +84,7 @@ rcParams['font.family'] = 'Roboto'
 AVOGADRO = 6.022E23
 VOL_CELL = 1.E-12
 
-# define rates
+# define default rates
 r_t = 0.02  # [mRNA s^-1]
 k_T = 0.083/10.  # [protein s^-1 mRNA^-1]
 k_deg_R = np.log(2)/(10.*3600.)  # average mRNA half-life = 10 hr (human)
