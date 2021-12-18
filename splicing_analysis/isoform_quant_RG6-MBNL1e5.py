@@ -1,30 +1,26 @@
 from matplotlib import pyplot as plt
-from matplotlib import rcParams
-import matplotlib.font_manager
 import numpy as np
 import scipy.interpolate
 import scipy.integrate
-import scipy.sparse as sparse
 import argparse
 import os
 import csv
 import copy
 
 def find_closest_index(l, val):
+    '''Return the index of the list item closest to a given value.
+    '''
     return min(range(len(l)), key=lambda i: abs(l[i]-val))
-
-matplotlib.font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
-rcParams['font.family'] = 'Roboto'
 
 # globals
 THRESHOLD = 50.
 
-# RG6-MBNL1 exon 5 minigene
-RG6_EXC_LEN = 327.  # from ApE file
+# define isoform lengths and integration bounds (bp)
+RG6_EXC_LEN = 327.  # RG6-MBNL1 exon 5 minigene, exclusion product
 RG6_EXC_LEFT_BOUND = 316.
 RG6_EXC_RIGHT_BOUND = 356.
 
-RG6_INC_LEN = 382.  # from ApE file
+RG6_INC_LEN = 382.  # RG6-MBNL1 exon 5 minigene, inclusion product
 RG6_INC_LEFT_BOUND = 370.
 RG6_INC_RIGHT_BOUND = 410.
 
@@ -33,7 +29,7 @@ bounds_exc = [RG6_EXC_LEFT_BOUND, RG6_EXC_RIGHT_BOUND]
 len_inc = RG6_INC_LEN
 len_exc  = RG6_EXC_LEN
 
-# parse arguments
+# define arguments and parse from command line
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--folderpath', help='Path to FA raw data folder.')
 parser.add_argument('-o', '--outfile', help='Name of output file.', default='out')
@@ -43,6 +39,7 @@ p_folder = args['folderpath']
 outname = args['outfile']
 plotdir = args['plotdir']
 
+# initialize output table and iteration counter
 splicing_data = []
 n_sample = 0
 
@@ -65,17 +62,18 @@ for rowname in rows:
 
     # iterate through the samples
     for k, header in enumerate(headers):
-        print k, header.split(' ')[1]
 
+        # get sample name from header
+        print k, header.split(' ')[1]
         samplename = '_'.join(header.split(' ')[1:])
 
         # identify and subtract flat baseline
-        # later should replace with low pass filter method
+        # (later: should replace with low pass filter method)
         baseline_idx = int(len(ydata[:,k])/2.)
         baseline = sorted(copy.deepcopy(ydata[:,k]))[baseline_idx]
         y_corr = copy.deepcopy(ydata[:,k]) - baseline 
 
-        # filter out low quality data
+        # find max fluorescence intensity value for each isoform
         xmin_exc = find_closest_index(xdata, bounds_exc[0])
         xmax_exc = find_closest_index(xdata, bounds_exc[1])
         xmin_inc = find_closest_index(xdata, bounds_inc[0])
@@ -85,12 +83,12 @@ for rowname in rows:
         max_inc = max(list(y_corr)[xmin_inc:xmax_inc])
 
         if max_exc < THRESHOLD or max_inc < THRESHOLD:
+            # filter out low quality data
             splicing_data.append([rowname[-1], k+1, samplename] + [np.nan]*5)
             plot_integration = False
         else:
             # interpolate the data and integrate the peaks
             electrofunc = scipy.interpolate.interp1d(xdata, y_corr)
-
             exc_bymass, exc_err = scipy.integrate.quad(electrofunc, bounds_exc[0], bounds_exc[1])[:2]
             inc_bymass, inc_err = scipy.integrate.quad(electrofunc, bounds_inc[0], bounds_inc[1])[:2]
 
@@ -101,6 +99,7 @@ for rowname in rows:
             splicing_data.append([rowname[-1], k+1, samplename, exc_bymass, inc_bymass, exc_bymol, inc_bymol, psi])
             plot_integration = True
 
+        # draw electropherogram with shaded integration region
         fig, ax = plt.subplots()
         ax.plot(xdata, y_corr, 'k-', linewidth=0.8)
         if plot_integration:
@@ -114,12 +113,12 @@ for rowname in rows:
         ax.set_xlim([10, 10000])
         ax.set_xlabel('Size (bp)')
         ax.set_ylabel('Fluorescence intensity')
-        plt.savefig(os.path.join(plotdir, samplename + '.png'), dpi=300)
+        plt.savefig(os.path.join(plotdir, samplename + '.pdf'), dpi=300)
         plt.close()
 
         n_sample += 1  # increment sample counter
 
-# output data
+# output data to CSV
 with open(os.path.join(p_folder, outname + '_rg6-mbnl1e5.csv'), 'w') as outfile:
     writer = csv.writer(outfile)
     writer.writerows([['row', 'lane', 'sample_name', 'exc (by mass)', 'inc (by mass)', 'exc (by mol)', 'inc (by mol)', 'psi']] + splicing_data)
