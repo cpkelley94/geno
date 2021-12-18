@@ -1,4 +1,4 @@
-# Negative autoregulation mitigates collateral RNase activity of repeat-targeting CRISPR-Cas13d in mammalian cells
+# GENO: negative autoregulation to minimize collateral activity Cas13d
 
 <img align="right" src="graphical_abstract-01.png" alt="01-spot-overlay" width=300 border="1">
 
