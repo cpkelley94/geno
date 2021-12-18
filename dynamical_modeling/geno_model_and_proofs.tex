@@ -1,0 +1,297 @@
+% --------------------------------------------------------------
+% This is all preamble stuff that you don't have to worry about.
+% Head down to where it says "Start here"
+% --------------------------------------------------------------
+
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{mathtools}
+\usepackage[version=4]{mhchem}
+\usepackage{enumitem}
+
+\usepackage[T1]{fontenc}
+\usepackage{stix}
+
+\DeclarePairedDelimiter\abs{\lvert}{\rvert}%
+\DeclarePairedDelimiter\norm{\lVert}{\rVert}%
+
+% Swap the definition of \abs* and \norm*, so that \abs
+% and \norm resizes the size of the brackets, and the
+% starred version does not.
+\makeatletter
+\let\oldabs\abs
+\def\abs{\@ifstar{\oldabs}{\oldabs*}}
+%
+\let\oldnorm\norm
+\def\norm{\@ifstar{\oldnorm}{\oldnorm*}}
+\makeatother
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+
+% \delimitershortfall=0pt
+\renewcommand\arraystretch{2}
+
+% \newtheorem{theorem}{Theorem}
+\numberwithin{equation}{section}
+
+\newenvironment{theorem}[2][Theorem]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{lemma}[2][Lemma]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{exercise}[2][Exercise]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{reflection}[2][Reflection]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{proposition}[2][Proposition]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+\newenvironment{corollary}[2][Corollary]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
+
+\begin{document}
+
+% --------------------------------------------------------------
+%                         Start here
+% --------------------------------------------------------------
+
+\title{Supplemental Note: Dynamical model of Cas13d gRNA excision for negative-autoregulatory optimization}
+\author{Chase P. Kelley, Eric T. Wang\\
+University of Florida}
+
+\maketitle
+
+\section{Model description}
+
+\noindent The following model is proposed to describe the kinetics and equilibria of a Cas13d negative autoregulation strategy mediated by gRNA excision (GENO):
+\begin{align*}
+  \dot{R} &= \text{transcription} - \text{processing} - \text{degradation}\\
+  \dot{A} &= \text{translation} - \text{processing} - \text{degradation}\\
+  \dot{B} &= \text{processing} - \text{degradation}
+\end{align*}
+
+\noindent This description relies on the following assumptions:
+\begin{enumerate}
+  \item A deterministic model describes the mean dynamics of the underlying stochastic process with reasonable accuracy.
+  \item gRNA processing is performed by apoprotein only, upon Cas13d:gRNA binary complex formation.
+  \item Nascent Cas13d translation products quickly diffuse away from the domain of their mRNAs.
+  \item Cas13d:gRNA binary complex formation is irreversible.
+  \item Nuclear/cytoplasmic compartmentalization affects crRNA processing negligibly.
+\end{enumerate}
+
+\noindent These biochemical dynamics and assumptions produce the following differential equation model (GENO):
+\begin{align}
+  \dot{R} &= r_t - k_p R A - \gamma_R R\\
+  \dot{A} &= k_T R - k_p R A - \gamma_A A\\
+  \dot{B} &= k_p R A - \gamma_B B
+\end{align}
+
+\noindent where:
+\begin{itemize}[itemsep=0pt]
+  \item $R$: concentration of Cas13d mRNA
+  \item $A$: concentration of Cas13d apoprotein
+  \item $B$: concentration of Cas13d:gRNA binary complex
+  \item $r_t$: rate of Pol II transcription of Cas13d mRNA
+  \item $k_T$: rate of translation of Cas13d protein
+  \item $k_p$: rate of crRNA processing
+  \item $\gamma_i$: rate of degradation of species $i$
+\end{itemize}
+
+\vspace*{2mm}
+
+\noindent A reference model (REF) is also presented for comparison, in which autoregulation is absent and gRNA processing and Cas13d expression are independent:
+\begin{align}
+  \dot{R} &= r_t - \gamma_R R\\
+  \dot{A} &= k_T R - k_p G A - \gamma_A A\\
+  \dot{B} &= k_p G A - \gamma_B B\\
+  \dot{G} &= r_G - k_p G A - \gamma_G G
+\end{align}
+
+\noindent where:
+\begin{itemize}[itemsep=0pt]
+  \item $G$: concentration of unbound gRNA
+  \item $r_G$: rate of Pol III transcription of gRNA
+\end{itemize}
+
+\section{Equilibrium analysis}
+
+\subsection{GENO model}
+
+\noindent At equilibrium, the GENO model reduces to the following:
+\begin{align}
+  0 &= r_t - k_p \hat{R} \hat{A} - \gamma_R \hat{R} \label{GEeq1}\\
+  0 &= k_T \hat{R} - k_p \hat{R} \hat{A} - \gamma_A \hat{A} \label{GEeq2}\\
+  0 &= k_p \hat{R} \hat{A} - \gamma_B \hat{B} \label{GEeq3}
+\end{align}
+
+\noindent From (\ref{GEeq1}),
+\begin{align}
+  \hat{A} &= \frac{r_t - \gamma_R \hat{R}}{k_p \hat{R}} \label{GEeq4}
+\end{align}
+
+\noindent By substitution of (\ref{GEeq4}) into (\ref{GEeq2}),
+\begin{align}
+  \frac{r_t - \gamma_R \hat{R}}{k_p \hat{R}} &= \frac{k_T \hat{R}}{k_p \hat{R} + \gamma_A}
+\end{align}
+
+\noindent which reduces to the quadratic equation
+\begin{align}
+  0 &= k_p (k_T + \gamma_R) \hat{R}^2 - (k_p r_t - \gamma_A \gamma_R) \hat{R} - \gamma_A r_t \label{GEeq5}
+\end{align}
+
+\noindent The solutions of this quadratic equation are
+\begin{align}
+  \hat{R} &= \frac{k_p r_t - \gamma_A \gamma_R \pm \sqrt{(k_p r_t - \gamma_A \gamma_R)^2 + 4 \gamma_A r_t k_p (k_T + \gamma_R)}}{2 k_p (k_T + \gamma_R)}
+\end{align}
+
+\noindent By inspection,
+\begin{align}
+  \abs{k_p r_t - \gamma_A \gamma_R} &< \sqrt{(k_p r_t - \gamma_A \gamma_R)^2 + 4 \gamma_A r_t k_p (k_T + \gamma_R)}
+\end{align}
+
+\noindent Therefore, regardless of the sign of the term $\abs{k_p r_t - \gamma_A \gamma_R}$, the quadratic equation (\ref{GEeq5}) has a single positive solution given by
+\begin{align}
+  \hat{R} &= \frac{k_p r_t - \gamma_A \gamma_R + \sqrt{(k_p r_t - \gamma_A \gamma_R)^2 + 4 \gamma_A r_t k_p (k_T + \gamma_R)}}{2 k_p (k_T + \gamma_R)}
+\end{align}
+
+\noindent Equivalently,
+\begin{align}
+  \hat{R} &= \dfrac{r_t}{\gamma_R} \left( \dfrac{k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} + \sqrt{\left( k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} \right)^2 + \dfrac{4 k_p k_T \gamma_A \gamma_R^2}{r_t}} }{2 k_p (k_T + \gamma_R)} \right) \label{GEeq7}
+\end{align}
+
+\noindent From (\ref{GEeq3}) and (\ref{GEeq4}),
+\begin{align}
+  \hat{B} &= \frac{r_t - \gamma_R \hat{R}}{\gamma_B} \label{GEeq6}
+\end{align}
+
+\noindent Thus, the system described by the GENO model has a single equilibrium point $(\hat{R}^{\mathrm{GENO}}, \hat{A}^{\mathrm{GENO}}, \hat{B}^{\mathrm{GENO}})$ at the solutions provided in (\ref{GEeq7}), (\ref{GEeq4}), and (\ref{GEeq6}).
+
+\subsection{REF model}
+
+\noindent At equilibrium, the REF model reduces to the following:
+\begin{align}
+  0 &= r_t - \gamma_R \hat{R} \label{REFeq1}\\
+  0 &= k_T \hat{R} - k_p \hat{G} \hat{A} - \gamma_A \hat{A} \label{REFeq2}\\
+  0 &= k_p \hat{G} \hat{A} - \gamma_B \hat{B} \label{REFeq3}\\
+  0 &= r_G - k_p \hat{G} \hat{A} - \gamma_G \hat{G} \label{REFeq4}
+\end{align}
+
+\noindent From (\ref{REFeq1}),
+\begin{align}
+  \hat{R} &= \frac{r_t}{\gamma_R} \label{REFeq5}
+\end{align}
+
+\noindent From (\ref{REFeq2}) and (\ref{REFeq5}),
+\begin{align}
+  \hat{A} &= \frac{k_T r_t}{\gamma_R} \left( \frac{1}{k_p \hat{G} + \gamma_A} \right) \label{REFeq6}
+\end{align}
+
+\noindent From (\ref{REFeq4}),
+\begin{align}
+  \hat{G} &= \frac{r_G}{k_p \hat{A} + \gamma_G} \label{REFeq7}
+\end{align}
+
+\noindent Substituting (\ref{REFeq7}) into (\ref{REFeq6}) yields
+\begin{align}
+  \hat{A} &= \dfrac{k_T r_t}{\gamma_R} \left( \dfrac{1}{\dfrac{k_p r_G}{k_p \hat{A} + \gamma_G} + \gamma_A} \right)
+\end{align}
+
+\noindent which simplifies to the quadratic equation
+\begin{align}
+  \gamma_A k_p \hat{A}^2 + \left( k_p r_G + \gamma_A \gamma_G - \frac{k_T r_t k_p}{\gamma_R} \right) \hat{A} - \frac{k_T r_t \gamma_G}{\gamma_R} &= 0 \label{REFeq9}
+\end{align}
+
+\noindent As the product of the first and third coefficients is strictly negative, the discriminant is strictly positive. Thus, the polynomial has a single positive real solution for $\hat{A}$.\\
+
+\noindent From (\ref{REFeq3}),
+\begin{align}
+  \hat{B} &= \frac{k_p \hat{G} \hat{A}}{\gamma_B} \label{REFeq8}
+\end{align}
+
+\noindent Substituting (\ref{REFeq6}) into (\ref{REFeq8}) yields
+\begin{align}
+  \hat{B} &= \frac{k_T r_t}{\gamma_R \gamma_B} \left( \frac{k_p \hat{G}}{k_p \hat{G} + \gamma_A} \right) \label{REFeq10}
+\end{align}
+
+\noindent Thus, the system described by the REF model has a single equilibrium point\\ $(\hat{R}^{\mathrm{REF}}, \hat{A}^{\mathrm{REF}}, \hat{B}^{\mathrm{REF}}, \hat{G}^{\mathrm{REF}})$ with the solution fully constrained by (\ref{REFeq5}), (\ref{REFeq9}), (\ref{REFeq10}), and (\ref{REFeq7}), respectively. \\
+
+\noindent Importantly, in the REF model, the concentration of binary complex $\hat{B}$ takes the form of a Hill function, where $\lim\limits_{\hat{G} \to 0} \hat{B} = 0$ and $\lim\limits_{\hat{G} \to \infty} \hat{B} = \frac{k_T r_t}{\gamma_R \gamma_B}$. \\
+
+\noindent The autoregulation efficiency $\eta_{\mathrm{GENO}}$ is defined as
+\begin{align}
+  \eta_{\mathrm{GENO}} &= \frac{\hat{B}^{\mathrm{REF}} - \hat{B}^{\mathrm{GENO}}}{\hat{B}^{\mathrm{REF}}}
+\end{align}
+
+\section{Proofs}
+
+\begin{theorem}{1}
+  At equilibrium, negative autoregulation by gRNA excision reduces the expression of the Cas13d mRNA compared to the reference model.
+\end{theorem}
+
+\begin{proof}
+  Proof by contradiction. The equilibrium mRNA concentration in the GENO model is provided in (\ref{GEeq7}):
+  \begin{align*}
+    \hat{R}^{\mathrm{GENO}} &= \dfrac{r_t}{\gamma_R} \left( \dfrac{k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} + \sqrt{\left( k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} \right)^2 + \dfrac{4 k_p k_T \gamma_A \gamma_R^2}{r_t}} }{2 k_p (k_T + \gamma_R)} \right)
+  \end{align*}
+
+  \noindent In the REF model, the equilibrium concentration is provided in (\ref{REFeq5}):
+  \begin{align*}
+    \hat{R}^{\mathrm{REF}} &= \frac{r_t}{\gamma_R}
+  \end{align*}
+
+  \noindent Assume $\hat{R}^{\mathrm{GENO}} \geq \hat{R}^{\mathrm{REF}}$. Equivalently,
+  \begin{align*}
+    \dfrac{k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} + \sqrt{\left( k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} \right)^2 + \dfrac{4 k_p k_T \gamma_A \gamma_R^2}{r_t}} }{2 k_p (k_T + \gamma_R)} &\geq 1\\
+    k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} + \sqrt{\left( k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} \right)^2 + \dfrac{4 k_p k_T \gamma_A \gamma_R^2}{r_t}} &\geq 2 k_p k_T + 2 k_p \gamma_R\\
+    \sqrt{\left( k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} \right)^2 + \dfrac{4 k_p k_T \gamma_A \gamma_R^2}{r_t}} &\geq 2 k_p k_T + k_p \gamma_R + \dfrac{\gamma_A \gamma_R^2}{r_t}\\
+    \left( k_p \gamma_R - \dfrac{\gamma_A \gamma_R^2}{r_t} \right)^2 + \dfrac{4 k_p k_T \gamma_A \gamma_R^2}{r_t} &\geq \left( 2 k_p k_T + k_p \gamma_R + \dfrac{\gamma_A \gamma_R^2}{r_t} \right)^2\\
+  \end{align*}
+  \vspace*{-15mm}
+  \begin{align*}
+    \left( \dfrac{\gamma_A \gamma_R^2}{r_t} \right)^2 + \dfrac{2 \gamma_A \gamma_R^3 k_p}{r_t} + k_p^2 \gamma_R^2 + \dfrac{4 k_p k_T \gamma_A \gamma_R^2}{r_t} &\geq \left( \dfrac{\gamma_A \gamma_R^2}{r_t} \right)^2 + \dfrac{2 \gamma_A \gamma_R^3 k_p}{r_t} + \\
+    &k_p^2 \gamma_R^2 + \dfrac{4 k_p k_T \gamma_A \gamma_R^2}{r_t} + 4 k_p^2 k_T \gamma_R + 4 k_p^2 k_T^2\\
+    0 &\geq 4 k_p^2 k_T \gamma_R + 4 k_p^2 k_T^2\\
+    0 &\geq 4 k_p^2 k_T (\gamma_R + k_T)
+  \end{align*}
+
+  \noindent This inequality cannot be satisfied, as all biological parameters in the right-hand term are strictly positive. Therefore, $\hat{R}^{\mathrm{GENO}} < \hat{R}^{\mathrm{REF}}$.
+
+\end{proof}
+
+\begin{theorem}{2}
+  Assume that gRNA is highly expressed in the reference model and is present in excess $(\hat{G} >> \gamma_A/k_p)$, and that Cas13d protein translation is faster than mRNA degradation $(k_T > \gamma_R)$. At equilibrium, negative autoregulation by gRNA excision reduces the concentration of active Cas13d:gRNA binary complex compared to the reference model.
+\end{theorem}
+
+\begin{proof}
+  Proof by contradiction. The equilibrium binary complex concentration in the GENO model is provided in (\ref{GEeq6}):
+  \begin{align*}
+    \hat{B}^{\mathrm{GENO}} &= \frac{r_t - \gamma_R \hat{R}^{\mathrm{GENO}}}{\gamma_B}
+  \end{align*}
+
+  \noindent In the REF model, the equilibrium concentration is provided in (\ref{REFeq10}):
+  \begin{align*}
+    \hat{B}^{\mathrm{REF}} &= \frac{k_T r_t}{\gamma_R \gamma_B} \left( \frac{k_p \hat{G}^{\mathrm{REF}}}{k_p \hat{G}^{\mathrm{REF}} + \gamma_A} \right)
+  \end{align*}
+
+  \noindent If gRNA is expressed in excess in the REF model, the binary complex equilibrium concentration approaches its maximum value:
+  \begin{align*}
+    \lim_{\hat{G} \to \infty} \hat{B}^{\mathrm{REF}} &= \frac{k_T r_t}{\gamma_R \gamma_B}
+  \end{align*}
+
+  \noindent Assume $\hat{B}^{\mathrm{GENO}} \geq \lim\limits_{\hat{G} \to \infty} \hat{B}^{\mathrm{REF}}$. Equivalently,
+  \begin{align*}
+    \frac{r_t - \gamma_R \hat{R}^{\mathrm{GENO}}}{\gamma_B} &\geq \frac{k_T r_t}{\gamma_R \gamma_B}\\
+    r_t - \gamma_R \hat{R}^{\mathrm{GENO}} &\geq \frac{k_T r_t}{\gamma_R}\\
+    1 - \frac{k_T}{\gamma_R} &\geq \frac{\gamma_R \hat{R}^{\mathrm{GENO}}}{r_t}
+  \end{align*}
+
+  \noindent The right-hand term of this inequality is strictly positive. However, as $k_T > \gamma_R$, the left-hand term is strictly negative. This inequality cannot be satisfied. Thus, $\hat{B}^{\mathrm{GENO}} < \lim\limits_{\hat{G} \to \infty} \hat{B}^{\mathrm{REF}}$, under the following conditions:
+  \begin{enumerate}
+    \item gRNA expression in the reference system is high and in excess.
+    \item On average, more than one Cas13d protein molecule is translated from each Cas13d mRNA in the reference system.
+  \end{enumerate}
+
+\end{proof}
+
+\end{document}
