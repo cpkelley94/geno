@@ -8,7 +8,7 @@ CRISPR-Cas13d is an programmable RNA-guided RNA endonuclease and a promising can
 
 In this work, we investigated Cas13d collateral activity in the context of an RNA-targeting therapy for DM1, a disease caused by a transcribed long CTG repeat expansion. We found stark evidence of collateral activity when targeting expanded repeats and overexpressed transgenes, and we showed that collateral activity is cytotoxic even when targeting moderately-to-highly expressed endogenous genes. We introduced GENO, a negative autoregulation strategy that selectively minimizes the effects of Cas13d collateral activity when targeting repeat expansions. We recommend thorough screening of collateral activity when applying Cas13d to any target in mammalian cells.
 
-In this study, we used Python for microscopy analysis, alternative splicing quantitation, and dynamical modeling of GENO. The code developed in this study is available here.
+In this study, we used Python for microscopy analysis, alternative splicing quantitation, and dynamical modeling of GENO. The code developed in this study is available here. The manuscript describing this work is available on [bioRxiv](https://www.biorxiv.org/content/10.1101/2021.12.20.473384v1)
 
 ## Navigation
 - [Splicing analysis (capillary electrophoresis)](splicing_analysis)
