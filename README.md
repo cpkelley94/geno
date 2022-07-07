@@ -14,3 +14,5 @@ In this study, we used Python for microscopy analysis, alternative splicing quan
 - [Splicing analysis (capillary electrophoresis)](splicing_analysis)
 - [Microscopy image analysis (FISH, HCR, IF)](fish_if_analysis)
 - [Dynamical modeling of GENO](dynamical_modeling)
+
+[![DOI](https://zenodo.org/badge/439205008.svg)](https://zenodo.org/badge/latestdoi/439205008)
